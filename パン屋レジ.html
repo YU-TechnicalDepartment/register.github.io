@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>パン屋さんレジ</title>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <style>
+        #qr-canvas {
+            display: none;
+        }
+        #video-preview {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 150px;
+            height: auto;
+            border: 2px solid black;
+        }
+    </style>
+    <script>
+        let total = 0;
+
+        function addItem(name, price) {
+            const itemsList = document.getElementById('items');
+            const newItem = document.createElement('li');
+            newItem.textContent = `${name}: ${price}円`;
+            itemsList.appendChild(newItem);
+            total += price;
+        }
+
+        function scanQRCode() {
+            const codeReader = new ZXing.BrowserQRCodeReader();
+            const video = document.getElementById('video-preview');
+            codeReader.decodeFromInputVideoDevice(undefined, 'video-preview').then(result => {
+                const [name, priceWithYen] = result.text.split(/(\d+円)/).filter(Boolean);
+                const price = parseInt(priceWithYen.replace('円', ''), 10);
+                addItem(name, price);
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }).catch(err => console.error(err));
+        }
+
+        function showTotal() {
+            alert(`合計金額: ${total}円`);
+        }
+
+        function reset() {
+            total = 0;
+            document.getElementById('items').innerHTML = '';
+        }
+    </script>
+</head>
+<body>
+    <h1>パン屋さんレジ</h1>
+    <button onclick="scanQRCode()">QRコードをスキャン</button>
+    <button onclick="showTotal()">お会計</button>
+    <button onclick="reset()">次のお会計</button>
+    <video id="video-preview"></video>
+    <ul id="items"></ul>
+</body>
+</html>
