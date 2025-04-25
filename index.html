@@ -1,61 +1,221 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>パン屋さんレジ</title>
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
-    <style>
-        #qr-canvas {
-            display: none;
-        }
-        #video-preview {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            width: 150px;
-            height: auto;
-            border: 2px solid black;
-        }
-    </style>
-    <script>
-        let total = 0;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>パン屋さんレジ (Modern UI with Icons)</title>
+  <!-- Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-p6Wl2bkyqHr97fwD749Fr76eaLg5F9NIGl4+3mQujDtaJ7lExwbNoVkvl4Rdv+8gudRCh4WwiwJ3XY5f2b8DUA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <style>
+    /* 全体の基本設定 */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      background-color: #f0f0f0;
+      color: #333;
+    }
 
-        function addItem(name, price) {
-            const itemsList = document.getElementById('items');
-            const newItem = document.createElement('li');
-            newItem.textContent = `${name}: ${price}円`;
-            itemsList.appendChild(newItem);
-            total += price;
-        }
+    /* ヘッダー */
+    header {
+      background-color: #ffcc66;
+      color: #333;
+      text-align: center;
+      padding: 20px;
+      font-size: 24px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
 
-        function scanQRCode() {
-            const codeReader = new ZXing.BrowserQRCodeReader();
-            const video = document.getElementById('video-preview');
-            codeReader.decodeFromInputVideoDevice(undefined, 'video-preview').then(result => {
-                const [name, priceWithYen] = result.text.split(/(\d+円)/).filter(Boolean);
-                const price = parseInt(priceWithYen.replace('円', ''), 10);
-                addItem(name, price);
-                video.srcObject.getTracks().forEach(track => track.stop());
-            }).catch(err => console.error(err));
-        }
+    /* メインコンテナ */
+    main {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
 
-        function showTotal() {
-            alert(`合計金額: ${total}円`);
-        }
+    /* スキャナー領域 */
+    .scanner-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto 20px auto;
+      border: 3px dashed #ccc;
+      border-radius: 8px;
+      overflow: hidden;
+      background-color: #000;
+    }
+    #video-preview {
+      width: 100%;
+      display: block;
+    }
 
-        function reset() {
-            total = 0;
-            document.getElementById('items').innerHTML = '';
-        }
-    </script>
+    /* コントロールボタン */
+    .controls {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .controls button {
+      background-color: #ffcc66;
+      border: none;
+      padding: 10px 20px;
+      margin: 0 10px 10px 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      display: inline-flex;
+      align-items: center;
+    }
+    .controls button i {
+      margin-right: 8px;
+      font-size: 18px;
+    }
+    .controls button:hover {
+      background-color: #ffdb99;
+    }
+
+    /* 購入リスト（テーブル形式） */
+    .items-list {
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      overflow: hidden;
+      background-color: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #f9f9f9;
+    }
+
+    /* 合計金額の表示 */
+    .total-display {
+      font-size: 20px;
+      font-weight: bold;
+      text-align: right;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-    <h1>パン屋さんレジ</h1>
-    <button onclick="scanQRCode()">QRコードをスキャン</button>
-    <button onclick="showTotal()">お会計</button>
-    <button onclick="reset()">次のお会計</button>
-    <video id="video-preview"></video>
-    <ul id="items"></ul>
+  <header>
+    パン屋さんレジ
+  </header>
+  <main>
+    <!-- QRコードスキャン領域 -->
+    <div class="scanner-container">
+      <video id="video-preview" autoplay></video>
+    </div>
+
+    <!-- 各種コントロール -->
+    <div class="controls">
+      <button onclick="scanQRCode()">
+  <img src="images/qr-code.png" alt="QRコードスキャン" style="width:20px; height:auto; margin-right:8px;">
+  QRコードスキャン
+</button>
+      <button onclick="reset()">
+       <img src="images/reset.png" alt="リセット" style="width:20px; height:auto; margin-right:8px;">
+リセット
+      </button>
+    </div>
+
+    <!-- 購入リスト -->
+    <div class="items-list">
+      <table>
+        <thead>
+          <tr>
+            <th>商品名</th>
+            <th>金額(円)</th>
+          </tr>
+        </thead>
+        <tbody id="items">
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 合計金額 -->
+    <div class="total-display" id="totalDisplay">
+      合計: 0円
+    </div>
+  </main>
+  
+  <script>
+    let total = 0;
+    let codeReader = null;
+
+    function addItem(name, price) {
+      const itemsTable = document.getElementById('items');
+      const newRow = document.createElement('tr');
+      const nameCell = document.createElement('td');
+      const priceCell = document.createElement('td');
+      
+      nameCell.textContent = name;
+      priceCell.textContent = price + "円";
+      
+      newRow.appendChild(nameCell);
+      newRow.appendChild(priceCell);
+      itemsTable.appendChild(newRow);
+      
+      total += price;
+      updateTotalDisplay();
+    }
+
+    function updateTotalDisplay() {
+      document.getElementById('totalDisplay').textContent = "合計: " + total + "円";
+    }
+
+    function scanQRCode() {
+      if (!codeReader) {
+        codeReader = new ZXing.BrowserQRCodeReader();
+      }
+      codeReader.decodeFromInputVideoDevice(undefined, 'video-preview')
+      .then(result => {
+        const text = result.text.trim();
+        let name = "";
+        let price = 0;
+        
+        // コロン区切り、または数値の部分で判定
+        if (text.indexOf(':') !== -1) {
+          const parts = text.split(':');
+          name = parts[0].trim();
+          price = parseInt(parts[1].replace(/[^\d]/g, ''), 10);
+        } else {
+          const match = text.match(/(.*?)(\d+)/);
+          if (match) {
+            name = match[1].trim();
+            price = parseInt(match[2], 10);
+          }
+        }
+
+        addItem(name, price);
+        
+        // スキャン後、ビデオストリームを停止して再読み取りを防止
+        const video = document.getElementById('video-preview');
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach(track => track.stop());
+        }
+      })
+      .catch(err => {
+        console.error("QRコードの読み取りに失敗しました:", err);
+      });
+    }
+
+    function reset() {
+      total = 0;
+      document.getElementById('items').innerHTML = '';
+      updateTotalDisplay();
+    }
+  </script>
 </body>
 </html>
