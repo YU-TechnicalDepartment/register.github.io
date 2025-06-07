@@ -118,15 +118,21 @@
       <video id="video-preview" autoplay></video>
     </div>
 
+    <!-- 📌 カメラ選択のプルダウンをカメラ表示画面の下に追加 -->
+    <div class="controls">
+      <label for="cameraSelect">カメラを選択:</label>
+      <select id="cameraSelect"></select>
+    </div>
+
     <!-- 各種コントロール -->
     <div class="controls">
       <button onclick="scanQRCode()">
-  <img src="images/qr-code.png" alt="QRコードスキャン" style="width:20px; height:auto; margin-right:8px;">
-  QRコードスキャン
-</button>
+        <img src="images/qr-code.png" alt="QRコードスキャン" style="width:20px; height:auto; margin-right:8px;">
+        QRコードスキャン
+      </button>
       <button onclick="reset()">
-       <img src="images/reset.png" alt="リセット" style="width:20px; height:auto; margin-right:8px;">
-リセット
+        <img src="images/reset.png" alt="リセット" style="width:20px; height:auto; margin-right:8px;">
+        リセット
       </button>
     </div>
 
@@ -154,19 +160,38 @@
     let total = 0;
     let codeReader = null;
 
+    // カメラ一覧を取得し、プルダウンに追加
+    function loadCameras() {
+      navigator.mediaDevices.enumerateDevices()
+        .then(devices => {
+          const selectElement = document.getElementById("cameraSelect");
+          selectElement.innerHTML = ''; // 初期化
+
+          devices.forEach(device => {
+            if (device.kind === "videoinput") {
+              const option = document.createElement("option");
+              option.value = device.deviceId;
+              option.textContent = device.label || `カメラ ${selectElement.length + 1}`;
+              selectElement.appendChild(option);
+            }
+          });
+        })
+        .catch(err => console.error("カメラの取得に失敗しました:", err));
+    }
+
     function addItem(name, price) {
       const itemsTable = document.getElementById('items');
       const newRow = document.createElement('tr');
       const nameCell = document.createElement('td');
       const priceCell = document.createElement('td');
-      
+
       nameCell.textContent = name;
       priceCell.textContent = price + "円";
-      
+
       newRow.appendChild(nameCell);
       newRow.appendChild(priceCell);
       itemsTable.appendChild(newRow);
-      
+
       total += price;
       updateTotalDisplay();
     }
@@ -179,12 +204,13 @@
       if (!codeReader) {
         codeReader = new ZXing.BrowserQRCodeReader();
       }
-      codeReader.decodeFromInputVideoDevice(undefined, 'video-preview')
+      const selectedCameraId = document.getElementById("cameraSelect").value;
+      codeReader.decodeFromInputVideoDevice(selectedCameraId || undefined, 'video-preview')
       .then(result => {
         const text = result.text.trim();
         let name = "";
         let price = 0;
-        
+
         // コロン区切り、または数値の部分で判定
         if (text.indexOf(':') !== -1) {
           const parts = text.split(':');
@@ -199,7 +225,7 @@
         }
 
         addItem(name, price);
-        
+
         // スキャン後、ビデオストリームを停止して再読み取りを防止
         const video = document.getElementById('video-preview');
         if (video.srcObject) {
@@ -216,6 +242,9 @@
       document.getElementById('items').innerHTML = '';
       updateTotalDisplay();
     }
+
+    // ページロード時にカメラ一覧を取得
+    window.onload = loadCameras;
   </script>
 </body>
 </html>
